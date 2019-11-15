@@ -1,0 +1,44 @@
+.header {
+	height: 50px;
+}
+
+input {
+	border: none;
+	outline: none;
+	background-image: linear-gradient(white, grey);
+}
+
+.title{
+	text-align: center;
+}
+
+.description {
+  	padding: 10px;
+  	border: 5px lightblue solid;
+  	margin: 20px;
+}
+
+.upload {
+	padding: 10px;
+	border: 5px lightblue solid;
+	margin: 20px;
+	text-align: center;
+}
+
+.uploadFile {
+	text-align: center;
+}
+
+.descriptionTitle {
+	text-align: left;
+}
+
+.transpose {
+	
+}
+
+.submit {
+	color: white;
+	background: blue;
+	font-size: 16px;
+}
