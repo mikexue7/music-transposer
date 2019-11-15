@@ -4,30 +4,43 @@ import './App.css';
 class App extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {firstname: '', lastname: '', message: ''};
+    this.state = {name: '', message: '', dwld_message: ''};
+    this.submitClick = this.submitClick.bind(this)
+    this.upClick = this.upClick.bind(this)
+    this.downClick = this.downClick.bind(this)
   }
 
-  getVerification() {
-    fetch("http://localhost:8080" + "/verify" + "?firstName=" + this.state.firstname + "&lastName=" + this.state.lastname, {
-      method: 'GET',
-      credentials: 'include',
-      mode: 'cors'
-    }).then(res => res.text()).then((response) => {
-      this.setState({message: response});
-    });
+  // getVerification() {
+  //   fetch("http://localhost:8080" + "/verify" + "?firstName=" + this.state.firstname + "&lastName=" + this.state.lastname, {
+  //     method: 'GET',
+  //     credentials: 'include',
+  //     mode: 'cors'
+  //   }).then(res => res.text()).then((response) => {
+  //     this.setState({message: response});
+  //   });
+  // }
+
+  nameChange(event) {
+    this.setState({name: event.target.value});
   }
 
-  firstNameChange(event) {
-    this.setState({firstname: event.target.value});
-  }
-
-  lastNameChange(event) {
-    this.setState({lastname: event.target.value});
+  messageChange(event) {
+    this.setState({message: event.target.value});
   }
 
   submitClick(event) {
     event.preventDefault();
-    this.getVerification();
+    this.setState({dwld_message: "Your file is downloading"});
+  }
+
+  upClick(event) {
+    document.getElementsByClassName('upButton').background = "blue";
+    document.getElementsByClassName('downButton').background = "white";
+  }
+
+  downClick(event) {
+    document.getElementsByClassName('downButton').background = "blue";
+    document.getElementsByClassName('upButton').background = "white";
   }
 
   render() {
@@ -43,21 +56,34 @@ class App extends React.Component {
         </div>
         <div className = "upload" >
           <h2 className = "uploadFile">Upload File</h2>
-          <button className = "uploadButton" onClick = {this.buttonClick.bind(this)}>From Computer</button>
+          <button className = "uploadButton"> From Computer</button>
           <div className = "transpose">
             <h4>Tranpose: 
-              <button onClick = {this.buttonClick.bind(this)}>number</button>
+              <button type="number">number</button>
               half steps
-              <button onClick = {this.buttonClick.bind(this)}>up/down</button>
+              <button className = "upButton" onClick = {this.upClick}>up</button>
+              <button className = "downButton" onClick = {this.downClick}>down</button>
             </h4>
           </div>  
           <div>
             <button className = "submit" onClick = {this.submitClick}>Submit</button>
           </div>
           <div>
-            {this.state.message}  
-          </div>      
+            <h1>{this.state.message} </h1>
+          </div>    
         </div>
+        <div className = "questionsForm">
+          <h2>Questions or Concerns? Shoot me a message below.</h2>
+          <label>
+            Name:
+            <input className = "nameInput" type="text" value={this.state.name} onChange={this.nameChange} />
+          </label>
+          <label>
+            Message:
+            <input className = "messageInput" type="text" value={this.state.message} onChange={this.messageChange} />
+          </label>
+          <button className = "submit">Submit</button>
+        </div>  
       </div>
     );
   }
