@@ -36,6 +36,9 @@ class App extends React.Component {
     const data = new FormData();
     data.append('file', this.state.selectedFile);
     axios.post("http://localhost:8000/upload", data, {})
+        .catch(e => {
+          console.log(e.message);
+        })
         .then(res => {
           console.log(res.statusText);
         });
