@@ -1,13 +1,15 @@
 import React from 'react';
+import axios from 'axios';
 import './App.css';
 
 class App extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {name: '', message: '', dwld_message: ''};
-    this.submitClick = this.submitClick.bind(this)
-    this.upClick = this.upClick.bind(this)
-    this.downClick = this.downClick.bind(this)
+    this.state = {name: '', message: '', dwld_message: '', selectedFile: null};
+    this.submitClick = this.submitClick.bind(this);
+    this.upClick = this.upClick.bind(this);
+    this.downClick = this.downClick.bind(this);
+    this.onUploadClick = this.onUploadClick.bind(this);
   }
 
   // getVerification() {
@@ -31,6 +33,16 @@ class App extends React.Component {
   submitClick(event) {
     event.preventDefault();
     this.setState({dwld_message: "Your file is downloading"});
+    const data = new FormData();
+    data.append('file', this.state.selectedFile);
+    axios.post("http://localhost:8000/upload", data, {})
+        .then(res => {
+          console.log(res.statusText);
+        });
+  }
+
+  onUploadClick(event) {
+    this.setState({selectedFile: event.target.files[0]});
   }
 
   upClick(event) {
@@ -55,8 +67,12 @@ class App extends React.Component {
           If you've ever wanted to sing along to that song that's just too high, this is for you.
         </div>
         <div className = "upload" >
-          <h2 className = "uploadFile">Upload File</h2>
-          <button className = "uploadButton"> From Computer</button>
+          <div className="file-upload">
+            <label>
+              Upload
+            </label>
+            <input type="file" className = "uploadFile" onChange={this.onUploadClick}/>
+          </div>
           <div className = "transpose">
             <h4>Tranpose: 
               <button type="number">number</button>
