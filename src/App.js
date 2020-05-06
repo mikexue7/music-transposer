@@ -34,7 +34,7 @@ class App extends React.Component {
     event.preventDefault();
     this.setState({dwld_message: "Your file is downloading"});
     const data = new FormData();
-    data.append('file', this.state.selectedFile);
+    data.append('file', this.state.selectedFile, this.state.selectedFile.name);
     axios.post("http://localhost:8000/upload", data, {})
         .catch(e => {
           console.log(e.message);

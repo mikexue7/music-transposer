@@ -1,7 +1,7 @@
 'use strict';
 
 const express = require('express');
-var app = express();
+const app = express();
 const multer = require('multer');
 const cors = require('cors');
 
@@ -11,28 +11,26 @@ app.use(cors());
 //     app.use(app.router);
 // });
 
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'public')
-    },
-    filename: function (req, file, cb) {
-        cb(null, Date.now() + '-' + file.originalname)
-    }
-});
+// const storage = multer.diskStorage({
+//     destination: function (req, file, cb) {
+//         cb(null, '../public')
+//     },
+//     filename: function (req, file, cb) {
+//         cb(null, file.originalname)
+//     }
+// });
 
+const storage = multer.memoryStorage();
 const upload = multer({ storage: storage }).single('file');
 
 app.post('/upload', function(req, res) {
-    console.log("sup cuz");
-    console.log(upload);
     upload(req, res, function (err) {
         if (err instanceof multer.MulterError) {
-            console.log("multer error");
             return res.status(500).json(err);
         } else if (err) {
-            console.log("some other shit");
             return res.status(500).json(err);
         }
+        // process req.file
         return res.status(200).send(req.file);
     });
 });
