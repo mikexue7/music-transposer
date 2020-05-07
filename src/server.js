@@ -5,6 +5,9 @@ const app = express();
 const multer = require('multer');
 const cors = require('cors');
 const decode = require('audio-decode');
+const fs = require('fs');
+const toWav = require('audiobuffer-to-wav');
+const AudioBuffer = require('audio-buffer');
 
 app.use(cors());
 
@@ -25,7 +28,11 @@ app.post('/upload', function(req, res) {
             // move data to buffer
             let transposedBuffer = moveTransposedDataToBuffer(transposedData);
             // produce file from buffer
-            
+            let wav = toWav(transposedBuffer);
+            const chunk = new Uint8Array(wav);
+            fs.appendFile(req.filename + '.wav', new Buffer(chunk), function (err) {
+                if (err) return res.status(500).json(err);
+            });
             // need to send new file, also new (and old?) audioBuffer
             return res.status(200).send(req.file);
         });
@@ -42,7 +49,7 @@ function convertFileToData(file, fn) {
         for (let i = 0; i < originalData.length; i++) {
             const channelData = new Float32Array(originalBuffer.length);
             originalData[i] = channelData;
-            originalBuffer.copyFromChannel(channelData, i + 1);
+            originalBuffer.copyFromChannel(channelData, i);
         }
         fn(originalData);
     })
@@ -75,7 +82,7 @@ function moveTransposedDataToBuffer(transposedData) {
     });
     for (let i = 0; i < transposedData.length; i++) {
         const channelData = transposedData[i];
-        transposedBuffer.copyToChannel(channelData, i + 1);
+        transposedBuffer.copyToChannel(channelData, i);
     }
     return transposedBuffer;
 }
