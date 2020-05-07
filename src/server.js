@@ -6,7 +6,9 @@ const multer = require('multer');
 const cors = require('cors');
 const decode = require('audio-decode');
 
-let audioData;
+let originalData;
+let transposedData;
+let transposedBuffer;
 
 app.use(cors());
 
@@ -21,28 +23,39 @@ app.post('/upload', function(req, res) {
             return res.status(500).json(err);
         }
         // process req.file
-        fileToData(req.file);
+        convertFileToData(req.file);
+        // transpose data
+        transposeData(originalData, 3);
         // need to send new file, also new audioBuffer
         return res.status(200).send(req.file);
     });
 });
 
-function fileToData(file) {
-    decode(file, (err, audioBuffer) => {
+function convertFileToData(file) {
+    decode(file, (err, originalBuffer) => {
         if (err) {
             console.log("Incorrect file format.");
             return;
         }
-        audioData = new Float32Array(audioBuffer.length);
-        console.log(audioBuffer.length);
-        console.log(audioBuffer.numberOfChannels)
-        audioBuffer.copyFromChannel(audioData, 1);
-        console.log(audioData);
+        originalData = new Array(originalBuffer.numberOfChannels);
+        for (let i = 0; i < originalData.length; i++) {
+            const channelData = new Float32Array(originalBuffer.length);
+            originalData[i] = channelData;
+            originalBuffer.copyFromChannel(channelData, i + 1);
+        }
     })
 }
 
-function transpose(data, numSteps, direction) {
+function transposeData(data, numSteps, direction) {
 
+}
+
+function moveTransposedDataToBuffer() {
+    transposedBuffer = new AudioBuffer({length: transposedData[0].length, numberOfChannels: transposedData.length});
+    for (let i = 0; i < transposedData.length; i++) {
+        const channelData = transposedData[i];
+        transposedBuffer.copyToChannel(channelData, i + 1);
+    }
 }
 
 app.listen(8000, function() {
