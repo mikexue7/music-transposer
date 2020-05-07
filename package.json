@@ -11,6 +11,7 @@
     "express": "^4.17.1",
     "multer": "^1.4.2",
     "nodemon": "^2.0.2",
+    "pitch-shift": "0.0.0",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-scripts": "^3.4.1"

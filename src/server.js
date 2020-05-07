@@ -6,10 +6,6 @@ const multer = require('multer');
 const cors = require('cors');
 const decode = require('audio-decode');
 
-let originalData;
-let transposedData;
-let transposedBuffer;
-
 app.use(cors());
 
 const storage = multer.memoryStorage();
@@ -23,39 +19,65 @@ app.post('/upload', function(req, res) {
             return res.status(500).json(err);
         }
         // process req.file
-        convertFileToData(req.file);
-        // transpose data
-        transposeData(originalData, 3);
-        // need to send new file, also new audioBuffer
-        return res.status(200).send(req.file);
+        convertFileToData(req.file, function (originalData) {
+            // transpose data
+            let transposedData = transposeData(originalData, 3);
+            // move data to buffer
+            let transposedBuffer = moveTransposedDataToBuffer(transposedData);
+            // produce file from buffer
+            
+            // need to send new file, also new (and old?) audioBuffer
+            return res.status(200).send(req.file);
+        });
     });
 });
 
-function convertFileToData(file) {
+function convertFileToData(file, fn) {
     decode(file, (err, originalBuffer) => {
         if (err) {
             console.log("Incorrect file format.");
             return;
         }
-        originalData = new Array(originalBuffer.numberOfChannels);
+        let originalData = new Array(originalBuffer.numberOfChannels);
         for (let i = 0; i < originalData.length; i++) {
             const channelData = new Float32Array(originalBuffer.length);
             originalData[i] = channelData;
             originalBuffer.copyFromChannel(channelData, i + 1);
         }
+        fn(originalData);
     })
 }
 
-function transposeData(data, numSteps, direction) {
-
+function transposeData(data, steps, direction) {
+    let transposedData = new Array(data.length);
+    for (let i = 0; i < data.length; i++) {
+        const transposedChannel = new Float32Array(data[0].length);
+        transposedData[i] = transposedChannel;
+        let pointer = 0;
+        const shifter = require("pitch-shift")(
+            function onData(frame) {
+                transposedChannel.set(frame, pointer);
+                pointer += frame.length;
+            },
+            function onTune(t, pitch) {
+                const numSteps = direction.equals("down") ? -steps : steps;
+                return Math.pow(2, numSteps / 12);
+            });
+        shifter(data);
+    }
+    return transposedData;
 }
 
-function moveTransposedDataToBuffer() {
-    transposedBuffer = new AudioBuffer({length: transposedData[0].length, numberOfChannels: transposedData.length});
+function moveTransposedDataToBuffer(transposedData) {
+    let transposedBuffer = new AudioBuffer({
+        length: transposedData[0].length,
+        numberOfChannels: transposedData.length
+    });
     for (let i = 0; i < transposedData.length; i++) {
         const channelData = transposedData[i];
         transposedBuffer.copyToChannel(channelData, i + 1);
     }
+    return transposedBuffer;
 }
 
 app.listen(8000, function() {
