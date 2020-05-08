@@ -9,6 +9,7 @@ const PitchShifter = require('pitch-shift');
 const fs = require('fs');
 const toWav = require('audiobuffer-to-wav');
 const AudioBuffer = require('audio-buffer');
+const WavDecoder = require('wav-decoder');
 
 app.use(cors());
 
@@ -24,20 +25,27 @@ app.post('/upload', function(req, res) {
         }
         // process req.file
         convertFileToData(req.file, function (originalData) {
-            console.log("******* ORIGINAL DATA ********");
-            console.log(originalData);
+            // console.log("******* ORIGINAL DATA ********");
+            // fs.appendFile('originalData.txt', originalData, (err) => {
+            //     if (err) throw err;
+            //     console.log("Wrote original data");
+            // });
             // transpose data
-            let transposedData = transposeData(originalData, 3, "up");
-            console.log("******* TRANSPOSED DATA *******");
-            console.log(transposedData);
+            let transposedData = transposeData(originalData, 12, "down");
+            //console.log("******* TRANSPOSED DATA *******");
+            // fs.appendFile('transposedData.txt', originalData, (err) => {
+            //     if (err) throw err;
+            //     console.log("Wrote transposed data");
+            // });
             // move data to buffer
             let transposedBuffer = moveTransposedDataToBuffer(transposedData);
             // produce file from buffer
-            // let wav = toWav(transposedBuffer);
-            // const chunk = new Uint8Array(wav);
-            // fs.appendFile(req.filename + '.wav', new Buffer(chunk), function (err) {
-            //     if (err) return res.status(500).json(err);
-            // });
+            let wav = toWav(transposedBuffer);
+            const chunk = new Uint8Array(wav);
+            console.log("chunk is ", chunk);
+            fs.appendFile('output.wav', Buffer.from(chunk), function (err) {
+                if (err) return res.status(500).json(err);
+            });
             // need to send new file, also new (and old?) audioBuffer
             return res.status(200).send(req.file);
         });
@@ -45,17 +53,23 @@ app.post('/upload', function(req, res) {
 });
 
 function convertFileToData(file, fn) {
-    decode(file.buffer, (err, originalBuffer) => {
+    // WavDecoder.decode(file.buffer).then(function(audioData) {
+    //     console.log("WAVE DECODER STUFF");
+    //     console.log(audioData.sampleRate);
+    //     console.log(audioData.channelData[0]); // Float32Array
+    //     console.log(audioData.channelData[1]); // Float32Array
+    // });
+    decode(file, (err, originalBuffer) => {
         if (err) {
             console.log("Incorrect file format.");
             return;
         }
         let wav = toWav(originalBuffer);
         const chunk = new Uint8Array(wav);
-        fs.appendFile('example.wav', new Buffer(chunk), function (err) {
+        console.log("original chunk is ", chunk);
+        fs.appendFile('input.wav', Buffer.from(chunk), function (err) {
             if (err) console.log("ERROR");
         });
-        console.log("originalBuffer ", originalBuffer);
         let originalData = new Array(originalBuffer.numberOfChannels);
         for (let i = 0; i < originalData.length; i++) {
             const channelData = new Float32Array(originalBuffer.length);
@@ -66,9 +80,10 @@ function convertFileToData(file, fn) {
     })
 }
 
-function transposeData(data, steps, direction = "up") {
+function transposeData(data, steps, direction) {
     let transposedData = new Array(data.length);
     const numSteps = direction === "up" ? steps : -steps;
+    console.log("numSteps: ", numSteps);
     const frame_size = 2048;
     for (let i = 0; i < data.length; i++) {
         const channelData = data[i];
@@ -81,6 +96,8 @@ function transposeData(data, steps, direction = "up") {
             },
             function onTune(t, pitch) {
                 return Math.pow(2, numSteps / 12);
+            }, {
+                sampleRate: 48000
             });
         for (let j = 0; j + frame_size < channelData.length; j += frame_size) {
             shifter(channelData.subarray(j, j + frame_size));
