@@ -9,7 +9,11 @@ const PitchShifter = require('pitch-shift');
 const fs = require('fs');
 const toWav = require('audiobuffer-to-wav');
 const AudioBuffer = require('audio-buffer');
-const WavDecoder = require('wav-decoder');
+//const WavDecoder = require('wav-decoder');
+//const AudioContext = require('audio-context');
+
+//const AudioContext = require('web-audio-api').AudioContext;
+//const FileReader = require('filereader');
 
 app.use(cors());
 
@@ -25,14 +29,16 @@ app.post('/upload', function(req, res) {
         }
         // process req.file
         convertFileToData(req.file, function (originalData) {
-            // console.log("******* ORIGINAL DATA ********");
+            console.log("******* ORIGINAL DATA ********");
+            console.log(originalData);
             // fs.appendFile('originalData.txt', originalData, (err) => {
             //     if (err) throw err;
             //     console.log("Wrote original data");
             // });
             // transpose data
-            let transposedData = transposeData(originalData, 12, "down");
-            //console.log("******* TRANSPOSED DATA *******");
+            let transposedData = transposeData(originalData, 7, "down");
+            console.log("******* TRANSPOSED DATA *******");
+            console.log(transposedData);
             // fs.appendFile('transposedData.txt', originalData, (err) => {
             //     if (err) throw err;
             //     console.log("Wrote transposed data");
@@ -42,10 +48,8 @@ app.post('/upload', function(req, res) {
             // produce file from buffer
             let wav = toWav(transposedBuffer);
             const chunk = new Uint8Array(wav);
-            console.log("chunk is ", chunk);
-            fs.appendFile('output.wav', Buffer.from(chunk), function (err) {
-                if (err) return res.status(500).json(err);
-            });
+            //console.log("chunk is ", chunk);
+            fs.writeFileSync('../resources/output.wav', Buffer.from(chunk));
             // need to send new file, also new (and old?) audioBuffer
             return res.status(200).send(req.file);
         });
@@ -59,17 +63,36 @@ function convertFileToData(file, fn) {
     //     console.log(audioData.channelData[0]); // Float32Array
     //     console.log(audioData.channelData[1]); // Float32Array
     // });
-    decode(file, (err, originalBuffer) => {
+    // const audioContext = new AudioContext();
+    // const fr = new FileReader();
+    // console.log("file is ", file);
+    //fr.readAsArrayBuffer(file.buffer);
+    // audioContext.decodeAudioData(new Uint8Array(file.buffer).buffer, function (originalBuffer) {
+    //     let wav = toWav(originalBuffer);
+    //     const chunk = new Uint8Array(wav);
+    //     //console.log("original chunk is ", chunk);
+    //     fs.appendFile('input.wav', Buffer.from(chunk), function (err) {
+    //         if (err) console.log("ERROR");
+    //     });
+    //     let originalData = new Array(originalBuffer.numberOfChannels);
+    //     for (let i = 0; i < originalData.length; i++) {
+    //         const channelData = new Float32Array(originalBuffer.length);
+    //         originalData[i] = channelData;
+    //         originalBuffer.copyFromChannel(channelData, i);
+    //     }
+    //     fn(originalData);
+    // }, function (err) {
+    //     console.log("Error converting file to buffer");
+    // });
+    decode(file.buffer, (err, originalBuffer) => {
         if (err) {
             console.log("Incorrect file format.");
             return;
         }
         let wav = toWav(originalBuffer);
         const chunk = new Uint8Array(wav);
-        console.log("original chunk is ", chunk);
-        fs.appendFile('input.wav', Buffer.from(chunk), function (err) {
-            if (err) console.log("ERROR");
-        });
+        //console.log("original chunk is ", chunk);
+        fs.writeFileSync('../resources/input.wav', Buffer.from(chunk));
         let originalData = new Array(originalBuffer.numberOfChannels);
         for (let i = 0; i < originalData.length; i++) {
             const channelData = new Float32Array(originalBuffer.length);
@@ -77,13 +100,13 @@ function convertFileToData(file, fn) {
             originalBuffer.copyFromChannel(channelData, i);
         }
         fn(originalData);
-    })
+    });
 }
 
 function transposeData(data, steps, direction) {
     let transposedData = new Array(data.length);
     const numSteps = direction === "up" ? steps : -steps;
-    console.log("numSteps: ", numSteps);
+    //console.log("numSteps: ", numSteps);
     const frame_size = 2048;
     for (let i = 0; i < data.length; i++) {
         const channelData = data[i];
@@ -93,11 +116,12 @@ function transposeData(data, steps, direction) {
             function onData(frame) {
                 transposedChannel.set(frame, pointer);
                 pointer += frame.length;
+                // fs.appendFile('../resources/transposedData.txt', frame, (err) => {
+                //     if (err) console.log("error");
+                // });
             },
             function onTune(t, pitch) {
                 return Math.pow(2, numSteps / 12);
-            }, {
-                sampleRate: 48000
             });
         for (let j = 0; j + frame_size < channelData.length; j += frame_size) {
             shifter(channelData.subarray(j, j + frame_size));
